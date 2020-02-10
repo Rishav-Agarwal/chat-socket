@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font: 13px Helvetica, Arial;
+      }
+
+      form {
+        background: #000;
+        padding: 3px;
+        width: 100%;
+      }
+
+      #mes {
+        position: fixed;
+        bottom: 0;
+      }
+
+      #nick {
+        position: fixed;
+        bottom: 10;
+      }
+
+      form input {
+        border: 0;
+        padding: 10px;
+        width: 90%;
+        margin-right: 0.5%;
+      }
+
+      form button {
+        width: 9%;
+        background: rgb(130, 224, 255);
+        border: none;
+        padding: 10px;
+      }
+
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      #messages li {
+        padding: 5px 10px;
+      }
+
+      #messages li:nth-child(odd) {
+        background: #eee;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- The messages -->
+    <ul id="messages"></ul>
+
+    <!-- Form to enter the nickname. Disappears as soon as correct nickname is entered. -->
+    <form id="nick" action="">
+      <input id="nickname" placeholder="Nick name" autocomplete="off" />
+      <button type="submit">Submit</button>
+    </form>
+
+    <!-- Form to send messages -->
+    <form id="mes" action="">
+      <input id="m" autocomplete="off" /><button type="submit">Send</button>
+    </form>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+
+    <script>
+      $(() => {
+        // As soon as valid nickname is entered, start chat
+        regSocket = nickname => {
+          // Establish the socket with the nickname
+          var socket = io({ query: { nickname } });
+
+          // When message is submitted, send the message to other users
+          $("#mes").submit(e => {
+            e.preventDefault();
+
+            // Get the typed message
+            var msg = $("#m").val();
+            // Check if message isn't empty
+            msg.trim();
+            if (msg == "") return;
+
+            // Emit the message
+            socket.emit("chat-msg", msg);
+            // Clear the message
+            $("#m").val("");
+            // Append to the list of messages
+            $("#messages").append("<li>" + msg + "</li>");
+          });
+
+          // Listen for chat messages from other users
+          socket.on("chat-msg", msg => {
+            $("#messages").append("<li>" + msg + "</li>");
+          });
+
+          // Listern for connection of new users
+          socket.on("user-connect", msg => {
+            $("#messages").append("<li> >>> " + msg + "</li>");
+          });
+
+          // Listern for dis-connection of new users
+          socket.on("user-disconnect", msg => {
+            $("#messages").append("<li> >>> " + msg + "</li>");
+          });
+        };
+
+        // Submit nick name for chatting
+        $("#nick").submit(e => {
+          e.preventDefault();
+
+          // Get submitted nickname
+          var nickname = $("#nickname").val();
+          // Check nickname validity
+          nickname.trim();
+          if (nickname == "") return;
+          if (!/^[a-z]+$/i.test(nickname)) return;
+
+          // If nickname is valid, remove the nickname input
+          // and create a new socket with the nickname
+          $("#nick").remove();
+          regSocket(nickname);
+        });
+      });
+    </script>
+  </body>
+</html>
